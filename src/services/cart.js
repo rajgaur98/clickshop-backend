@@ -6,28 +6,16 @@ const config = require("../config");
 const getOrders = (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const user_id = jwt.verify(token, config.TOKEN_SECRET).id;
-  Order.find(
-    {
-      user_id: user_id,
-    },
-    async (err, order) => {
-      if (err) res.status(400).send(err);
-      else {
-        const orders = [];
-        if (order.length === 0) res.status(200).send(orders);
-        for await (const o of order) {
-          await Product.findById(o.product_id, (errr, product) => {
-            if (errr) res.status(400).send(errr);
-            else {
-              const temp = { ...product._doc, order_id: o._id };
-              orders.push(temp);
-            }
-          });
-        }
-        res.status(200).send(orders);
-      }
-    }
-  );
+  Order.find({
+    user_id: user_id,
+  })
+    .populate("product")
+    .exec((err, products) => {
+      if (err) {
+        console.log(err);
+        res.status(400).send(err);
+      } else res.status(200).send(products);
+    });
 };
 
 const addOrder = (req, res) => {
@@ -36,7 +24,7 @@ const addOrder = (req, res) => {
   Order.create(
     {
       user_id: user_id,
-      product_id: req.body.product_id,
+      product: req.body.product_id,
     },
     (err, order) => {
       if (err) res.status(400).send(err);
@@ -55,28 +43,16 @@ const deleteOrder = (req, res) => {
     (err, _) => {
       if (err) res.status(400).send(err);
       else {
-        Order.find(
-          {
-            user_id: user_id,
-          },
-          async (err, order) => {
-            if (err) res.status(400).send(err);
-            else {
-              const orders = [];
-              if (order.length === 0) res.status(200).send(orders);
-              for await (const o of order) {
-                await Product.findById(o.product_id, (errr, product) => {
-                  if (errr) res.status(400).send(errr);
-                  else {
-                    const temp = { ...product._doc, order_id: o._id };
-                    orders.push(temp);
-                  }
-                });
-              }
-              res.status(200).send(orders);
-            }
-          }
-        );
+        Order.find({
+          user_id: user_id,
+        })
+          .populate("product")
+          .exec((err, products) => {
+            if (err) {
+              console.log(err);
+              res.status(400).send(err);
+            } else res.status(200).send(products);
+          });
       }
     }
   );
