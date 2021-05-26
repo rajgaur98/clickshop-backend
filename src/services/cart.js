@@ -10,26 +10,21 @@ const getOrders = (req, res) => {
     {
       user_id: user_id,
     },
-    (err, order) => {
+    async (err, order) => {
       if (err) res.status(400).send(err);
       else {
         const orders = [];
         if (order.length === 0) res.status(200).send(orders);
-        order.forEach((o, i) => {
-          Product.find(
-            {
-              _id: o.product_id,
-            },
-            (errr, product) => {
-              if (errr) res.status(400).send(errr);
-              else {
-                temp = { ...product[0]._doc, order_id: o._id };
-                orders.push(temp);
-              }
-              if (i === order.length - 1) res.status(200).send(orders);
+        for await (const o of order) {
+          await Product.findById(o.product_id, (errr, product) => {
+            if (errr) res.status(400).send(errr);
+            else {
+              const temp = { ...product._doc, order_id: o._id };
+              orders.push(temp);
             }
-          );
-        });
+          });
+        }
+        res.status(200).send(orders);
       }
     }
   );
